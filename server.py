@@ -36,7 +36,7 @@ class ChatServer(threading.Thread):
         input: addr IPV4 address of client
         returns: none
         """
-        print(f'{nick} connected at { addr[0] }{ addr[1] }')
+        print(f'{nick} connected at { addr[0] }:{ addr[1] }')
         while True:
             try:
                 data = conn.recv(4096)
@@ -54,40 +54,50 @@ class ChatServer(threading.Thread):
          input: addr IPV4 address of client
          returns: none
          """
-        str_data = data.decode('utf-8')
+        str_data = data.decode('utf-8').strip()
         split_data = str_data.split()
 
-        if split_data[0].startswith('/'):
-            command = split_data[0][1:].strip()
+        if split_data and split_data[0].startswith('/'):
+            command = split_data[0][1:]
             if command == 'quit':
-                self.close_connection(id, nick)
+                self.close_connection(id)
             elif command == 'list':
-                self.list_clients(id)
+                self.list_clients(conn)
             elif command == 'nickname':
-                new_nick = split_data[1]
-                self.set_nick(id, new_nick)
+                if len(split_data) == 2 and len(split_data[1]):
+                    new_nick = split_data[1]
+                    if len(new_nick):
+                        self.set_nick(id, new_nick)
+                        nick = new_nick
+                else:
+                    conn.sendall(b'That is not a valid nick.\n')
             elif command == 'dm':
-                nick = split_data[1]
-                msg = str.encode(
-                    ' '.join([s for s in split_data[2:]]) + '\n')
-                print('dm=', msg)
-                self.send_direct_message(nick, msg)
+                if len(split_data) >= 3 and len(split_data[1]):
+                    nick = split_data[1]
+                    msg = str.encode(
+                        ' '.join([s for s in split_data[2:]]) + '\n')
+                    self.send_direct_message(nick, msg)
+                else:
+                    conn.sendall(b'Something went wrong. Try `/dm <nickname> <your message>`\n')
             else:
                 # Bad command
                 conn.sendall(str.encode('That is not a valid command.\n'))
         else:
             # This is a broadcast message
-            [c.conn.sendall(data)
-                for c in self.client_pool if len(self.client_pool)]
+            if str_data:
+                [c.conn.sendall(data)
+                    for c in self.client_pool if len(self.client_pool)]
 
-    def close_connection(self, id, nick):
+    def close_connection(self, id):
         """Close the client connection.
 
         input: id: uuid of the client
         input: nick: nick of the client
         returns: none
         """
-        msg = str.encode(f'{nick} has left the chat.\n')
+        for c in self.client_pool:
+            client = c if c.id == id else None
+        msg = str.encode(f'{client.nick} has left the chat.\n')
         [c.conn.sendall(msg)
          for c in self.client_pool if len(self.client_pool)]
         for c in self.client_pool:
@@ -95,15 +105,14 @@ class ChatServer(threading.Thread):
                 self.client_pool = [c for c in self.client_pool if c.id != id]
                 c.conn.close()
 
-    def list_clients(self, id):
+    def list_clients(self, conn):
         """Show the requesting client a list of all clients.
-        input: id: uuid of the requesting client
+        input: conn: requesting client's connection object
         returns: none
         """
         all_users = str.encode(
             ', '.join([c.nick for c in self.client_pool]) + '\n')
-        [c.conn.sendall(all_users)
-         for c in self.client_pool if len(self.client_pool)]
+        conn.sendall(all_users)
 
     def set_nick(self, id, new_nick):
         """Change nick associated with the requesting client.
@@ -134,7 +143,7 @@ class ChatServer(threading.Thread):
     def run(self):
         """Start up the server.
         """
-        print(f'Server running on { self.host }{ self.port }.')
+        print(f'Server running on { self.host }:{ self.port }.')
 
         while True:
             conn, addr = self.server.accept()
