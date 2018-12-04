@@ -7,10 +7,13 @@
 Simple chat server using TCP sockets coded in Python.
 
 ## Getting Started
-<!-- What are the steps that a user must take in order to build this app on their own machine and get it running? -->
+1. Download repo
+1. Start a pipenv virtual environment
+1. Run 'pipenv install' to ensure all dependencies are present
+1. Feed server.py to your favorite Python interpreter
 
 ## Architecture
-<!-- Provide a detailed description of the application design. What technologies (languages, libraries, etc) you're using, and any other relevant design information. This is also an area which you can include any visuals; flow charts, example usage gifs, screen captures, etc.-->
+Uses Python (including a number of built-in modules) and pipenv
 
 ## API
 N/A
