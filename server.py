@@ -45,41 +45,52 @@ class ChatServer(threading.Thread):
 
         if split_data[0].startswith('/'):
             command = split_data[0][1:].strip()
-            print('command=', command)
             if command == 'quit':
                 self.close_connection(id, nick)
             elif command == 'list':
                 self.list_clients(id)
             elif command == 'nickname':
-                pass
+                new_nick = split_data[1]
+                self.set_nick(id, new_nick)
             elif command == 'dm':
-                pass
+                nick = split_data[1]
+                msg = str.encode(' '.join([s for s in split_data[2:]]) + '\n')
+                print('dm=', msg)
+                self.send_direct_message(nick, msg)
             else:
                 # Bad command
-                pass
+                conn.sendall(str.encode('That is not a valid command.\n'))
         else:
             # This is a broadcast message
             [c.conn.sendall(data) for c in self.client_pool if len(self.client_pool)]
-            # pass
 
 
     def close_connection(self, id, nick):
         """Close the client connection"""
-        # print('incoming id=', id)
-        msg = str.encode(f'{nick} has left the chat.')
+        msg = str.encode(f'{nick} has left the chat.\n')
         [c.conn.sendall(msg) for c in self.client_pool if len(self.client_pool)]
         for c in self.client_pool:
-            # print('checking against id', c.id)
             if c.id == id:
-                # print('before remove', len(self.client_pool))
-                # self.client_pool.remove(c)
                 self.client_pool = [c for c in self.client_pool if c.id != id]
-                # print('after remoe', len(self.client_pool))
                 c.conn.close()
 
     def list_clients(self, id):
-        all_users = str.encode(', '.join([c.nick for c in self.client_pool]))
+        all_users = str.encode(', '.join([c.nick for c in self.client_pool]) + '\n')
         [c.conn.sendall(all_users) for c in self.client_pool if len(self.client_pool)]
+
+
+    def set_nick(self, id, new_nick):
+        for c in self.client_pool:
+            if c.id == id:
+                old_nick = c.nick
+                c.nick = new_nick
+                msg = str.encode(f'{old_nick} is now {new_nick}\n')
+                [c.conn.sendall(msg) for c in self.client_pool if len(self.client_pool)]
+
+    def send_direct_message(self, nick, msg):
+        for c in self.client_pool:
+            if c.nick == nick:
+                c.conn.sendall(msg)
 
     def run(self):
         """
