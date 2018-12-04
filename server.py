@@ -32,19 +32,12 @@ class ChatServer(threading.Thread):
         """
         """
         print(f'{nick} connected at { addr[0] }{ addr[1] }')
-
         while True:
-            data = conn.recv(4096)
-
-            # if len(self.client_pool):
-            #     for c in self.client_pool:
-            #         c.conn.sendall(data)
-
-            # [c.conn.sendall(data) for c in self.client_pool if len(self.client_pool)]
-            # print(type(data), data)
-            self.parse(data, id, nick, conn, addr)
-
-
+            try:
+                data = conn.recv(4096)
+                self.parse(data, id, nick, conn, addr)
+            except OSError:
+                break
 
     def parse(self, data, id, nick, conn, addr):
         str_data = data.decode('utf-8')
