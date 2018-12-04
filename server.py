@@ -7,7 +7,6 @@ import sys
 PORT = 9876
 
 
-
 class ChatServer(threading.Thread):
     def __init__(self, port, host='localhost'):
         super().__init__(daemon=True)
@@ -46,15 +45,15 @@ class ChatServer(threading.Thread):
                 break
 
     def parse(self, data, id, nick, conn, addr):
-       """Parse data input by client if it mapped to a command. Use the command
-        to decide which function to run.
+        """Parse data input by client if it mapped to a command. Use the command
+         to decide which function to run.
 
-        input: id (bytes) id of client
-        input: nick (bytes) nick of associated client
-        input: conn TCP connection object
-        input: addr IPV4 address of client
-        returns: none
-        """
+         input: id (bytes) id of client
+         input: nick (bytes) nick of associated client
+         input: conn TCP connection object
+         input: addr IPV4 address of client
+         returns: none
+         """
         str_data = data.decode('utf-8')
         split_data = str_data.split()
 
@@ -69,7 +68,8 @@ class ChatServer(threading.Thread):
                 self.set_nick(id, new_nick)
             elif command == 'dm':
                 nick = split_data[1]
-                msg = str.encode(' '.join([s for s in split_data[2:]]) + '\n')
+                msg = str.encode(
+                    ' '.join([s for s in split_data[2:]]) + '\n')
                 print('dm=', msg)
                 self.send_direct_message(nick, msg)
             else:
@@ -77,8 +77,8 @@ class ChatServer(threading.Thread):
                 conn.sendall(str.encode('That is not a valid command.\n'))
         else:
             # This is a broadcast message
-            [c.conn.sendall(data) for c in self.client_pool if len(self.client_pool)]
-
+            [c.conn.sendall(data)
+                for c in self.client_pool if len(self.client_pool)]
 
     def close_connection(self, id, nick):
         """Close the client connection.
@@ -88,7 +88,8 @@ class ChatServer(threading.Thread):
         returns: none
         """
         msg = str.encode(f'{nick} has left the chat.\n')
-        [c.conn.sendall(msg) for c in self.client_pool if len(self.client_pool)]
+        [c.conn.sendall(msg)
+         for c in self.client_pool if len(self.client_pool)]
         for c in self.client_pool:
             if c.id == id:
                 self.client_pool = [c for c in self.client_pool if c.id != id]
@@ -99,9 +100,10 @@ class ChatServer(threading.Thread):
         input: id: uuid of the requesting client
         returns: none
         """
-        all_users = str.encode(', '.join([c.nick for c in self.client_pool]) + '\n')
-        [c.conn.sendall(all_users) for c in self.client_pool if len(self.client_pool)]
-
+        all_users = str.encode(
+            ', '.join([c.nick for c in self.client_pool]) + '\n')
+        [c.conn.sendall(all_users)
+         for c in self.client_pool if len(self.client_pool)]
 
     def set_nick(self, id, new_nick):
         """Change nick associated with the requesting client.
@@ -115,7 +117,8 @@ class ChatServer(threading.Thread):
                 old_nick = c.nick
                 c.nick = new_nick
                 msg = str.encode(f'{old_nick} is now {new_nick}\n')
-                [c.conn.sendall(msg) for c in self.client_pool if len(self.client_pool)]
+                [c.conn.sendall(msg)
+                 for c in self.client_pool if len(self.client_pool)]
 
     def send_direct_message(self, nick, msg):
         """Show message to a specific client identified by their nick.
