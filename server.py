@@ -4,7 +4,7 @@ import socket
 import sys
 
 
-PORT = 9875
+PORT = 9876
 
 
 
@@ -49,7 +49,7 @@ class ChatServer(threading.Thread):
             if command == 'quit':
                 self.close_connection(id, nick)
             elif command == 'list':
-                print('list')
+                self.list_clients(id)
             elif command == 'nickname':
                 pass
             elif command == 'dm':
@@ -76,8 +76,10 @@ class ChatServer(threading.Thread):
                 self.client_pool = [c for c in self.client_pool if c.id != id]
                 # print('after remoe', len(self.client_pool))
                 c.conn.close()
-        # conn.close()
 
+    def list_clients(self, id):
+        all_users = str.encode(', '.join([c.nick for c in self.client_pool]))
+        [c.conn.sendall(all_users) for c in self.client_pool if len(self.client_pool)]
 
     def run(self):
         """
